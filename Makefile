@@ -1,7 +1,3 @@
-dev:
-	air
-run:
-	go run .
 test:
 	go test -json ./... | gotestfmt
 fmt:
