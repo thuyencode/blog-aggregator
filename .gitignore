@@ -16,6 +16,7 @@
 !.gram/tasks.jsonc
 !*.toml
 !*.yml
+!*.yaml
 
 !*.go
 !go.sum
