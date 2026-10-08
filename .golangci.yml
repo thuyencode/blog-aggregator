@@ -1,7 +1,6 @@
 version: "2"
 linters:
   enable:
-    - err113
     - errcheck
     - errchkjson
     - errname
