@@ -3,9 +3,11 @@ services:
     container_name: blog-aggregator_db
     image: postgres:18-alpine
     environment:
-      POSTGRES_PASSWORD: bootdev
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     ports:
-      - 5432:5432
+      - ${DB_PORT}:5432
     volumes:
       - postgres_data:/var/lib/postgresql
 
