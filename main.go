@@ -2,14 +2,16 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log"
 	"os"
 
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/joho/godotenv"
+	"github.com/lib/pq"
+	_ "github.com/lib/pq"
+	"github.com/lib/pq/pqerror"
 	"github.com/thuyencode/blog-aggregator/internal/config"
 	"github.com/thuyencode/blog-aggregator/internal/database"
 )
@@ -24,15 +26,14 @@ func main() {
 		log.Fatal(err)
 	}
 
-	ctx := context.Background()
 	dbString := os.Getenv("DB_STRING")
-	conn, err := pgx.Connect(ctx, dbString)
+	db, err := sql.Open("postgres", dbString)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	defer func() {
-		if err := conn.Close(ctx); err != nil {
+		if err := db.Close(); err != nil {
 			log.Fatal(err)
 		}
 	}()
@@ -42,7 +43,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	state := &state{config: &cfg, queries: database.New(conn)}
+	state := &state{config: &cfg, queries: database.New(db)}
 
 	cmds := make(commands)
 	cmds.register("login", handleLogin)
@@ -69,7 +70,7 @@ func handleLogin(s *state, cmd command) error {
 	username := cmd.Args[0]
 	user, err := s.queries.GetUser(context.Background(), username)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return fmt.Errorf("username %q doesn't exist", username)
 		}
 		return err
@@ -92,13 +93,8 @@ func handleRegister(s *state, cmd command) error {
 
 	user, err := s.queries.CreateUser(context.Background(), username)
 	if err != nil {
-		if pgErr, ok := err.(*pgconn.PgError); ok {
-			switch pgErr.Code {
-			case "23505":
-				return fmt.Errorf("username %q is already registered", username)
-			default:
-				return pgErr
-			}
+		if pqErr := pq.As(err, pqerror.UniqueViolation); pqErr != nil {
+			return fmt.Errorf("username %q is already registered", username)
 		}
 		return err
 	}

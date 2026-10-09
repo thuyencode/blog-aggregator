@@ -24,7 +24,7 @@ RETURNING
 `
 
 func (q *Queries) CreateUser(ctx context.Context, name string) (User, error) {
-	row := q.db.QueryRow(ctx, createUser, name)
+	row := q.db.QueryRowContext(ctx, createUser, name)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -45,7 +45,7 @@ WHERE
 `
 
 func (q *Queries) GetUser(ctx context.Context, name string) (User, error) {
-	row := q.db.QueryRow(ctx, getUser, name)
+	row := q.db.QueryRowContext(ctx, getUser, name)
 	var i User
 	err := row.Scan(
 		&i.ID,
