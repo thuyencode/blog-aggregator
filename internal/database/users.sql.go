@@ -55,3 +55,13 @@ func (q *Queries) GetUser(ctx context.Context, name string) (User, error) {
 	)
 	return i, err
 }
+
+const pruneUsers = `-- name: PruneUsers :exec
+TRUNCATE TABLE users
+`
+
+// pgls-ignore banTruncate
+func (q *Queries) PruneUsers(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, pruneUsers)
+	return err
+}

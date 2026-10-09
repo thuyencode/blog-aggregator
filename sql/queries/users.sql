@@ -18,3 +18,7 @@ FROM
     users
 WHERE
     name = $1;
+
+-- name: PruneUsers :exec
+-- pgls-ignore banTruncate
+TRUNCATE TABLE users;

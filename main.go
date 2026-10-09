@@ -48,6 +48,7 @@ func main() {
 	cmds := make(commands)
 	cmds.register("login", handleLogin)
 	cmds.register("register", handleRegister)
+	cmds.register("reset", handleReset)
 
 	args := os.Args
 	if len(args) < 2 {
@@ -105,4 +106,8 @@ func handleRegister(s *state, cmd command) error {
 
 	log.Printf("the username has been created: %+v", user)
 	return nil
+}
+
+func handleReset(s *state, _ command) error {
+	return s.queries.PruneUsers(context.Background())
 }
