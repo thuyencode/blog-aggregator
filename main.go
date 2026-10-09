@@ -10,8 +10,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/joho/godotenv"
-	"internal/config"
-	"internal/database"
+	"github.com/thuyencode/blog-aggregator/internal/config"
+	"github.com/thuyencode/blog-aggregator/internal/database"
 )
 
 type state struct {
@@ -24,27 +24,13 @@ func main() {
 		log.Fatal(err)
 	}
 
-	dbUsername := os.Getenv("DB_USERNAME")
-	dbPassword := os.Getenv("DB_PASSWORD")
-	dbName := os.Getenv("DB_NAME")
-	dbHost := os.Getenv("DB_HOST")
-	dbPort := os.Getenv("DB_PORT")
-
 	ctx := context.Background()
-	conn, err := pgx.Connect(
-		ctx,
-		fmt.Sprintf(
-			"postgres://%s:%s@%s:%s/%s?sslmode=disable",
-			dbUsername,
-			dbPassword,
-			dbHost,
-			dbPort,
-			dbName,
-		),
-	)
+	dbString := os.Getenv("DB_STRING")
+	conn, err := pgx.Connect(ctx, dbString)
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	defer func() {
 		if err := conn.Close(ctx); err != nil {
 			log.Fatal(err)
