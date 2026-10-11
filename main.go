@@ -49,6 +49,7 @@ func main() {
 	cmds.register("login", handleLogin)
 	cmds.register("register", handleRegister)
 	cmds.register("reset", handleReset)
+	cmds.register("users", handleGetUsers)
 
 	args := os.Args
 	if len(args) < 2 {
@@ -110,4 +111,21 @@ func handleRegister(s *state, cmd command) error {
 
 func handleReset(s *state, _ command) error {
 	return s.queries.PruneUsers(context.Background())
+}
+
+func handleGetUsers(s *state, _ command) error {
+	users, err := s.queries.GetUsers(context.Background())
+	if err != nil {
+		return err
+	}
+
+	for _, user := range users {
+		fmt.Printf("* %s", user.Name)
+		if user.Name == s.config.CurrentUserName {
+			fmt.Print(" (current)")
+		}
+		fmt.Println()
+	}
+
+	return nil
 }
