@@ -28,9 +28,9 @@ RETURNING
 `
 
 type CreateFeedParams struct {
-	Name   string    `json:"name"`
-	Url    string    `json:"url"`
-	UserID uuid.UUID `json:"user_id"`
+	Name   string
+	Url    string
+	UserID uuid.UUID
 }
 
 func (q *Queries) CreateFeed(ctx context.Context, arg CreateFeedParams) (Feed, error) {
@@ -58,9 +58,9 @@ FROM
 `
 
 type GetFeedsRow struct {
-	Name     string `json:"name"`
-	Url      string `json:"url"`
-	Username string `json:"username"`
+	Name     string
+	Url      string
+	Username string
 }
 
 func (q *Queries) GetFeeds(ctx context.Context) ([]GetFeedsRow, error) {
