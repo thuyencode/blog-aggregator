@@ -156,3 +156,17 @@ func handleAddFeed(s *state, cmd command) error {
 
 	return nil
 }
+
+func handleGetFeeds(s *state, _ command) error {
+	feeds, err := s.queries.GetFeeds(context.Background())
+	if err != nil {
+		return err
+	}
+
+	log.Print("feeds list:")
+	for _, feed := range feeds {
+		fmt.Printf("* %+v\n", feed)
+	}
+
+	return nil
+}
