@@ -6,22 +6,54 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/lib/pq"
 	"github.com/lib/pq/pqerror"
+	"github.com/thuyencode/blog-aggregator/internal/database"
 	"github.com/thuyencode/blog-aggregator/internal/feed"
 )
 
+type LackArgsError struct {
+	ArgNames []string
+	Command  command
+}
+
+func (e LackArgsError) Error() string {
+	var msg strings.Builder
+	fmt.Fprintf(&msg, "the %q command expects ", e.Command.Name)
+
+	for _, arg := range e.ArgNames {
+		fmt.Fprintf(&msg, "[%s] ", arg)
+	}
+
+	if len(e.ArgNames) <= 1 {
+		msg.WriteString("as argument")
+	} else {
+		msg.WriteString("as arguments")
+	}
+
+	return msg.String()
+}
+
+type NonExistUsernameError struct {
+	Username string
+}
+
+func (e NonExistUsernameError) Error() string {
+	return fmt.Sprintf("username %q doesn't exist", e.Username)
+}
+
 func handleLogin(s *state, cmd command) error {
 	if len(cmd.Args) == 0 {
-		return errors.New("a single argument is expected")
+		return LackArgsError{[]string{"username"}, cmd}
 	}
 
 	username := cmd.Args[0]
 	user, err := s.queries.GetUser(context.Background(), username)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return fmt.Errorf("username %q doesn't exist", username)
+			return NonExistUsernameError{username}
 		}
 		return err
 	}
@@ -36,7 +68,7 @@ func handleLogin(s *state, cmd command) error {
 
 func handleRegister(s *state, cmd command) error {
 	if len(cmd.Args) == 0 {
-		return errors.New("a single argument is expected")
+		return LackArgsError{[]string{"username"}, cmd}
 	}
 
 	username := cmd.Args[0]
@@ -58,7 +90,7 @@ func handleRegister(s *state, cmd command) error {
 }
 
 func handleReset(s *state, _ command) error {
-	return s.queries.PruneUsers(context.Background())
+	return s.queries.DeleteAllUsers(context.Background())
 }
 
 func handleGetUsers(s *state, _ command) error {
@@ -88,5 +120,39 @@ func handleAggregator(_ *state, _ command) error {
 
 	log.Printf("rss feed:")
 	fmt.Printf("%+v", *feed)
+	return nil
+}
+
+func handleAddFeed(s *state, cmd command) error {
+	if len(cmd.Args) < 2 {
+		return LackArgsError{[]string{"name", "url"}, cmd}
+	}
+
+	username := s.config.CurrentUserName
+	user, err := s.queries.GetUser(context.Background(), username)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return NonExistUsernameError{username}
+		}
+		return err
+	}
+
+	name := cmd.Args[0]
+	url := cmd.Args[1]
+
+	feed, err := s.queries.CreateFeed(
+		context.Background(),
+		database.CreateFeedParams{Name: name, Url: url, UserID: user.ID},
+	)
+	if err != nil {
+		if pqErr := pq.As(err, pqerror.UniqueViolation); pqErr != nil {
+			return fmt.Errorf("url %q is already registered", url)
+		}
+		return err
+	}
+
+	log.Printf("new feed added:")
+	fmt.Printf("%+v", feed)
+
 	return nil
 }

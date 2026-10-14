@@ -25,6 +25,6 @@ SELECT
 FROM
     users;
 
--- name: PruneUsers :exec
--- pgls-ignore banTruncate
-TRUNCATE TABLE users;
+-- name: DeleteAllUsers :exec
+DELETE FROM
+    users;

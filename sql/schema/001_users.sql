@@ -7,5 +7,4 @@ CREATE TABLE users (
 );
 
 -- +goose Down
--- pgls-ignore banDropTable
 DROP TABLE users;

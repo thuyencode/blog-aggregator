@@ -35,6 +35,16 @@ func (q *Queries) CreateUser(ctx context.Context, name string) (User, error) {
 	return i, err
 }
 
+const deleteAllUsers = `-- name: DeleteAllUsers :exec
+DELETE FROM
+    users
+`
+
+func (q *Queries) DeleteAllUsers(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, deleteAllUsers)
+	return err
+}
+
 const getUser = `-- name: GetUser :one
 SELECT
     id, created_at, updated_at, name
@@ -89,14 +99,4 @@ func (q *Queries) GetUsers(ctx context.Context) ([]User, error) {
 		return nil, err
 	}
 	return items, nil
-}
-
-const pruneUsers = `-- name: PruneUsers :exec
-TRUNCATE TABLE users
-`
-
-// pgls-ignore banTruncate
-func (q *Queries) PruneUsers(ctx context.Context) error {
-	_, err := q.db.ExecContext(ctx, pruneUsers)
-	return err
 }
