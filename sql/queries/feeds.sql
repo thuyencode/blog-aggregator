@@ -8,7 +8,14 @@ VALUES
         pg_catalog.now(),
         $1,
         $2,
-        $3
+        (
+            SELECT
+                users.id
+            FROM
+                users
+            WHERE
+                users.name = sqlc.arg(user_name)
+        )
     )
 RETURNING
     *;
@@ -21,3 +28,11 @@ SELECT
 FROM
     feeds
     JOIN users ON feeds.user_id = users.id;
+
+-- name: GetFeedByUrl :one
+SELECT
+    *
+FROM
+    feeds
+WHERE
+    url = $1;

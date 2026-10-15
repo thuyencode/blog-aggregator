@@ -21,7 +21,7 @@ type LackArgsError struct {
 
 func (e LackArgsError) Error() string {
 	var msg strings.Builder
-	fmt.Fprintf(&msg, "the %q command expects ", e.Command.Name)
+	fmt.Fprintf(&msg, "the %q command requires ", e.Command.Name)
 
 	for _, arg := range e.ArgNames {
 		fmt.Fprintf(&msg, "[%s] ", arg)
@@ -129,26 +129,26 @@ func handleAddFeed(s *state, cmd command) error {
 	}
 
 	username := s.config.CurrentUserName
-	user, err := s.queries.GetUser(context.Background(), username)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return NonExistUsernameError{username}
-		}
-		return err
-	}
-
-	name := cmd.Args[0]
+	feedName := cmd.Args[0]
 	url := cmd.Args[1]
 
 	feed, err := s.queries.CreateFeed(
 		context.Background(),
-		database.CreateFeedParams{Name: name, Url: url, UserID: user.ID},
+		database.CreateFeedParams{Name: feedName, Url: url, UserName: username},
 	)
 	if err != nil {
 		if pqErr := pq.As(err, pqerror.UniqueViolation); pqErr != nil {
 			return fmt.Errorf("url %q is already registered", url)
 		}
 		return err
+	}
+
+	_, err = s.queries.CreateFeedFollow(
+		context.Background(),
+		database.CreateFeedFollowParams{FeedID: feed.ID, UserName: username},
+	)
+	if err != nil {
+		return nil
 	}
 
 	log.Printf("new feed added:")
@@ -166,6 +166,57 @@ func handleGetFeeds(s *state, _ command) error {
 	log.Print("feeds list:")
 	for _, feed := range feeds {
 		fmt.Printf("* %+v\n", feed)
+	}
+
+	return nil
+}
+
+func handleFollow(s *state, cmd command) error {
+	if len(cmd.Args) < 1 {
+		return LackArgsError{[]string{"url"}, cmd}
+	}
+
+	url := cmd.Args[0]
+
+	feed, err := s.queries.GetFeedByUrl(context.Background(), url)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return errors.New("this feed hasn't been added yet")
+		}
+		return err
+	}
+
+	feedFollow, err := s.queries.CreateFeedFollow(
+		context.Background(),
+		database.CreateFeedFollowParams{UserName: s.config.CurrentUserName, FeedID: feed.ID},
+	)
+	if err != nil {
+		return err
+	}
+
+	log.Println("feed followed:")
+	fmt.Printf("%+v\n", feedFollow)
+
+	return nil
+}
+
+func handleGetFollowing(s *state, _ command) error {
+	feedFollows, err := s.queries.GetFeedFollowsForUser(
+		context.Background(),
+		s.config.CurrentUserName,
+	)
+	if err != nil {
+		return err
+	}
+
+	if len(feedFollows) == 0 {
+		log.Println("currently you are not following any feed")
+		return nil
+	}
+
+	log.Println("following list:")
+	for _, follow := range feedFollows {
+		fmt.Printf("* %s\n", follow)
 	}
 
 	return nil
