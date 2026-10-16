@@ -13,6 +13,8 @@ import (
 	"github.com/thuyencode/blog-aggregator/internal/feed"
 )
 
+var ErrFeedNonExist = errors.New("this feed hasn't been added yet")
+
 func handleLogin(s *state, cmd command) error {
 	if len(cmd.Args) == 0 {
 		return LackArgsError{[]string{"username"}, cmd}
@@ -147,7 +149,7 @@ func handleFollow(s *state, cmd command, user database.User) error {
 	feed, err := s.queries.GetFeedByUrl(context.Background(), url)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return errors.New("this feed hasn't been added yet")
+			return ErrFeedNonExist
 		}
 		return err
 	}
@@ -184,6 +186,28 @@ func handleGetFollowing(s *state, _ command, user database.User) error {
 	for _, follow := range feedFollows {
 		fmt.Printf("* %s\n", follow)
 	}
+
+	return nil
+}
+
+func handleUnfollow(s *state, cmd command, user database.User) error {
+	if len(cmd.Args) < 1 {
+		return LackArgsError{[]string{"url"}, cmd}
+	}
+
+	feedUrl := cmd.Args[0]
+	feedName, err := s.queries.RemoveFeedFollow(
+		context.Background(),
+		database.RemoveFeedFollowParams{UserID: user.ID, FeedUrl: feedUrl},
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrFeedNonExist
+		}
+		return err
+	}
+
+	log.Printf("you have unfollowed feed %q successfully\n", feedName)
 
 	return nil
 }

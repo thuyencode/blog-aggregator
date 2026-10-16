@@ -30,3 +30,26 @@ FROM
     JOIN feeds ON feed_follows.feed_id = feeds.id
 WHERE
     feed_follows.user_id = $1;
+
+-- name: RemoveFeedFollow :one
+WITH deleted_feed_follow AS (
+    DELETE FROM
+        feed_follows
+    WHERE
+        feed_follows.user_id = $1
+        AND feed_follows.feed_id = (
+            SELECT
+                feeds.id
+            FROM
+                feeds
+            WHERE
+                feeds.url = sqlc.arg(feed_url)
+        )
+    RETURNING
+        *
+)
+SELECT
+    feeds.name AS feed_name
+FROM
+    deleted_feed_follow
+    JOIN feeds ON deleted_feed_follow.feed_id = feeds.id;
