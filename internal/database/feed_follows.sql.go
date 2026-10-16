@@ -20,15 +20,8 @@ WITH inserted_feed_follow AS (
         (
             pg_catalog.now(),
             pg_catalog.now(),
-            (
-                SELECT
-                    users.id
-                FROM
-                    users
-                WHERE
-                    users.name = $2
-            ),
-            $1
+            $1,
+            $2
         )
     RETURNING
         id, created_at, updated_at, user_id, feed_id
@@ -44,8 +37,8 @@ FROM
 `
 
 type CreateFeedFollowParams struct {
-	FeedID   uuid.UUID
-	UserName string
+	UserID uuid.UUID
+	FeedID uuid.UUID
 }
 
 type CreateFeedFollowRow struct {
@@ -59,7 +52,7 @@ type CreateFeedFollowRow struct {
 }
 
 func (q *Queries) CreateFeedFollow(ctx context.Context, arg CreateFeedFollowParams) (CreateFeedFollowRow, error) {
-	row := q.db.QueryRowContext(ctx, createFeedFollow, arg.FeedID, arg.UserName)
+	row := q.db.QueryRowContext(ctx, createFeedFollow, arg.UserID, arg.FeedID)
 	var i CreateFeedFollowRow
 	err := row.Scan(
 		&i.ID,
@@ -73,7 +66,7 @@ func (q *Queries) CreateFeedFollow(ctx context.Context, arg CreateFeedFollowPara
 	return i, err
 }
 
-const getFeedFollowsForUser = `-- name: GetFeedFollowsForUser :many
+const getFeedFollows = `-- name: GetFeedFollows :many
 SELECT
     feeds.name AS feed_name
 FROM
@@ -81,18 +74,11 @@ FROM
     JOIN users ON feed_follows.user_id = users.id
     JOIN feeds ON feed_follows.feed_id = feeds.id
 WHERE
-    feed_follows.user_id = (
-        SELECT
-            users.id
-        FROM
-            users
-        WHERE
-            users.name = $1
-    )
+    feed_follows.user_id = $1
 `
 
-func (q *Queries) GetFeedFollowsForUser(ctx context.Context, userName string) ([]string, error) {
-	rows, err := q.db.QueryContext(ctx, getFeedFollowsForUser, userName)
+func (q *Queries) GetFeedFollows(ctx context.Context, userID uuid.UUID) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, getFeedFollows, userID)
 	if err != nil {
 		return nil, err
 	}

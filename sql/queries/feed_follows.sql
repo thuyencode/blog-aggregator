@@ -6,15 +6,8 @@ WITH inserted_feed_follow AS (
         (
             pg_catalog.now(),
             pg_catalog.now(),
-            (
-                SELECT
-                    users.id
-                FROM
-                    users
-                WHERE
-                    users.name = sqlc.arg(user_name)
-            ),
-            $1
+            $1,
+            $2
         )
     RETURNING
         *
@@ -28,7 +21,7 @@ FROM
     JOIN users ON inserted_feed_follow.user_id = users.id
     JOIN feeds ON inserted_feed_follow.feed_id = feeds.id;
 
--- name: GetFeedFollowsForUser :many
+-- name: GetFeedFollows :many
 SELECT
     feeds.name AS feed_name
 FROM
@@ -36,11 +29,4 @@ FROM
     JOIN users ON feed_follows.user_id = users.id
     JOIN feeds ON feed_follows.feed_id = feeds.id
 WHERE
-    feed_follows.user_id = (
-        SELECT
-            users.id
-        FROM
-            users
-        WHERE
-            users.name = sqlc.arg(user_name)
-    );
+    feed_follows.user_id = $1;

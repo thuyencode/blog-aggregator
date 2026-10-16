@@ -9,7 +9,7 @@ type command struct {
 	Args []string
 }
 
-type commandHandler func(*state, command) error
+type commandHandler func(s *state, cmd command) error
 
 type commands map[string]commandHandler
 

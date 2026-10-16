@@ -6,43 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"strings"
 
 	"github.com/lib/pq"
 	"github.com/lib/pq/pqerror"
 	"github.com/thuyencode/blog-aggregator/internal/database"
 	"github.com/thuyencode/blog-aggregator/internal/feed"
 )
-
-type LackArgsError struct {
-	ArgNames []string
-	Command  command
-}
-
-func (e LackArgsError) Error() string {
-	var msg strings.Builder
-	fmt.Fprintf(&msg, "the %q command requires ", e.Command.Name)
-
-	for _, arg := range e.ArgNames {
-		fmt.Fprintf(&msg, "[%s] ", arg)
-	}
-
-	if len(e.ArgNames) <= 1 {
-		msg.WriteString("as argument")
-	} else {
-		msg.WriteString("as arguments")
-	}
-
-	return msg.String()
-}
-
-type NonExistUsernameError struct {
-	Username string
-}
-
-func (e NonExistUsernameError) Error() string {
-	return fmt.Sprintf("username %q doesn't exist", e.Username)
-}
 
 func handleLogin(s *state, cmd command) error {
 	if len(cmd.Args) == 0 {
@@ -72,7 +41,6 @@ func handleRegister(s *state, cmd command) error {
 	}
 
 	username := cmd.Args[0]
-
 	user, err := s.queries.CreateUser(context.Background(), username)
 	if err != nil {
 		if pqErr := pq.As(err, pqerror.UniqueViolation); pqErr != nil {
@@ -123,18 +91,17 @@ func handleAggregator(_ *state, _ command) error {
 	return nil
 }
 
-func handleAddFeed(s *state, cmd command) error {
+func handleAddFeed(s *state, cmd command, user database.User) error {
 	if len(cmd.Args) < 2 {
 		return LackArgsError{[]string{"name", "url"}, cmd}
 	}
 
-	username := s.config.CurrentUserName
 	feedName := cmd.Args[0]
 	url := cmd.Args[1]
 
 	feed, err := s.queries.CreateFeed(
 		context.Background(),
-		database.CreateFeedParams{Name: feedName, Url: url, UserName: username},
+		database.CreateFeedParams{Name: feedName, Url: url, UserID: user.ID},
 	)
 	if err != nil {
 		if pqErr := pq.As(err, pqerror.UniqueViolation); pqErr != nil {
@@ -145,7 +112,7 @@ func handleAddFeed(s *state, cmd command) error {
 
 	_, err = s.queries.CreateFeedFollow(
 		context.Background(),
-		database.CreateFeedFollowParams{FeedID: feed.ID, UserName: username},
+		database.CreateFeedFollowParams{FeedID: feed.ID, UserID: user.ID},
 	)
 	if err != nil {
 		return nil
@@ -171,13 +138,12 @@ func handleGetFeeds(s *state, _ command) error {
 	return nil
 }
 
-func handleFollow(s *state, cmd command) error {
+func handleFollow(s *state, cmd command, user database.User) error {
 	if len(cmd.Args) < 1 {
 		return LackArgsError{[]string{"url"}, cmd}
 	}
 
 	url := cmd.Args[0]
-
 	feed, err := s.queries.GetFeedByUrl(context.Background(), url)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -188,7 +154,7 @@ func handleFollow(s *state, cmd command) error {
 
 	feedFollow, err := s.queries.CreateFeedFollow(
 		context.Background(),
-		database.CreateFeedFollowParams{UserName: s.config.CurrentUserName, FeedID: feed.ID},
+		database.CreateFeedFollowParams{UserID: user.ID, FeedID: feed.ID},
 	)
 	if err != nil {
 		return err
@@ -200,10 +166,10 @@ func handleFollow(s *state, cmd command) error {
 	return nil
 }
 
-func handleGetFollowing(s *state, _ command) error {
-	feedFollows, err := s.queries.GetFeedFollowsForUser(
+func handleGetFollowing(s *state, _ command, user database.User) error {
+	feedFollows, err := s.queries.GetFeedFollows(
 		context.Background(),
-		s.config.CurrentUserName,
+		user.ID,
 	)
 	if err != nil {
 		return err

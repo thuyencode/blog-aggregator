@@ -8,14 +8,7 @@ VALUES
         pg_catalog.now(),
         $1,
         $2,
-        (
-            SELECT
-                users.id
-            FROM
-                users
-            WHERE
-                users.name = sqlc.arg(user_name)
-        )
+        $3
     )
 RETURNING
     *;
