@@ -66,7 +66,7 @@ func (q *Queries) CreateFeedFollow(ctx context.Context, arg CreateFeedFollowPara
 	return i, err
 }
 
-const getFeedFollows = `-- name: GetFeedFollows :many
+const getFeedFollowsByUserId = `-- name: GetFeedFollowsByUserId :many
 SELECT
     feeds.name AS feed_name
 FROM
@@ -77,8 +77,8 @@ WHERE
     feed_follows.user_id = $1
 `
 
-func (q *Queries) GetFeedFollows(ctx context.Context, userID uuid.UUID) ([]string, error) {
-	rows, err := q.db.QueryContext(ctx, getFeedFollows, userID)
+func (q *Queries) GetFeedFollowsByUserId(ctx context.Context, userID uuid.UUID) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, getFeedFollowsByUserId, userID)
 	if err != nil {
 		return nil, err
 	}

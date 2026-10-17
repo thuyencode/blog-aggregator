@@ -12,7 +12,7 @@ func middlewareLoggedIn(
 	handler func(s *state, cmd command, user database.User) error,
 ) commandHandler {
 	return func(s *state, cmd command) error {
-		user, err := s.queries.GetUser(context.Background(), s.config.CurrentUserName)
+		user, err := s.queries.GetUserByName(context.Background(), s.config.CurrentUserName)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				return NonExistUsernameError{s.config.CurrentUserName}

@@ -13,7 +13,7 @@ VALUES
 RETURNING
     *;
 
--- name: GetFeeds :many
+-- name: GetFeedsByUserId :many
 SELECT
     feeds.name,
     feeds.url,

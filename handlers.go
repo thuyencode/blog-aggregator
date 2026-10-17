@@ -21,7 +21,7 @@ func handleLogin(s *state, cmd command) error {
 	}
 
 	username := cmd.Args[0]
-	user, err := s.queries.GetUser(context.Background(), username)
+	user, err := s.queries.GetUserByName(context.Background(), username)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return NonExistUsernameError{username}
@@ -127,7 +127,7 @@ func handleAddFeed(s *state, cmd command, user database.User) error {
 }
 
 func handleGetFeeds(s *state, _ command) error {
-	feeds, err := s.queries.GetFeeds(context.Background())
+	feeds, err := s.queries.GetFeedsByUserId(context.Background())
 	if err != nil {
 		return err
 	}
@@ -172,7 +172,7 @@ func handleFollow(s *state, cmd command, user database.User) error {
 }
 
 func handleGetFollowing(s *state, _ command, user database.User) error {
-	feedFollows, err := s.queries.GetFeedFollows(
+	feedFollows, err := s.queries.GetFeedFollowsByUserId(
 		context.Background(),
 		user.ID,
 	)

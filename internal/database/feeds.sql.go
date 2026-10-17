@@ -70,7 +70,7 @@ func (q *Queries) GetFeedByUrl(ctx context.Context, url string) (Feed, error) {
 	return i, err
 }
 
-const getFeeds = `-- name: GetFeeds :many
+const getFeedsByUserId = `-- name: GetFeedsByUserId :many
 SELECT
     feeds.name,
     feeds.url,
@@ -80,21 +80,21 @@ FROM
     JOIN users ON feeds.user_id = users.id
 `
 
-type GetFeedsRow struct {
+type GetFeedsByUserIdRow struct {
 	Name     string
 	Url      string
 	Username string
 }
 
-func (q *Queries) GetFeeds(ctx context.Context) ([]GetFeedsRow, error) {
-	rows, err := q.db.QueryContext(ctx, getFeeds)
+func (q *Queries) GetFeedsByUserId(ctx context.Context) ([]GetFeedsByUserIdRow, error) {
+	rows, err := q.db.QueryContext(ctx, getFeedsByUserId)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetFeedsRow
+	var items []GetFeedsByUserIdRow
 	for rows.Next() {
-		var i GetFeedsRow
+		var i GetFeedsByUserIdRow
 		if err := rows.Scan(&i.Name, &i.Url, &i.Username); err != nil {
 			return nil, err
 		}

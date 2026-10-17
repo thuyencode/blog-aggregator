@@ -11,7 +11,7 @@ VALUES
 RETURNING
     *;
 
--- name: GetUser :one
+-- name: GetUserByName :one
 SELECT
     *
 FROM
