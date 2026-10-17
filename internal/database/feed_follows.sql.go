@@ -106,14 +106,7 @@ WITH deleted_feed_follow AS (
         feed_follows
     WHERE
         feed_follows.user_id = $1
-        AND feed_follows.feed_id = (
-            SELECT
-                feeds.id
-            FROM
-                feeds
-            WHERE
-                feeds.url = $2
-        )
+        AND feed_follows.feed_id = $2
     RETURNING
         id, created_at, updated_at, user_id, feed_id
 )
@@ -125,12 +118,12 @@ FROM
 `
 
 type RemoveFeedFollowParams struct {
-	UserID  uuid.UUID
-	FeedUrl string
+	UserID uuid.UUID
+	FeedID uuid.UUID
 }
 
 func (q *Queries) RemoveFeedFollow(ctx context.Context, arg RemoveFeedFollowParams) (string, error) {
-	row := q.db.QueryRowContext(ctx, removeFeedFollow, arg.UserID, arg.FeedUrl)
+	row := q.db.QueryRowContext(ctx, removeFeedFollow, arg.UserID, arg.FeedID)
 	var feed_name string
 	err := row.Scan(&feed_name)
 	return feed_name, err

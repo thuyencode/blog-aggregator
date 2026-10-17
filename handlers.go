@@ -145,8 +145,8 @@ func handleFollow(s *state, cmd command, user database.User) error {
 		return LackArgsError{[]string{"url"}, cmd}
 	}
 
-	url := cmd.Args[0]
-	feed, err := s.queries.GetFeedByUrl(context.Background(), url)
+	feedUrl := cmd.Args[0]
+	feed, err := s.queries.GetFeedByUrl(context.Background(), feedUrl)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return ErrFeedNonExist
@@ -159,6 +159,9 @@ func handleFollow(s *state, cmd command, user database.User) error {
 		database.CreateFeedFollowParams{UserID: user.ID, FeedID: feed.ID},
 	)
 	if err != nil {
+		if pqErr := pq.As(err, pqerror.UniqueViolation); pqErr != nil {
+			return fmt.Errorf("you already follow %q feed", feed.Name)
+		}
 		return err
 	}
 
@@ -196,13 +199,21 @@ func handleUnfollow(s *state, cmd command, user database.User) error {
 	}
 
 	feedUrl := cmd.Args[0]
-	feedName, err := s.queries.RemoveFeedFollow(
-		context.Background(),
-		database.RemoveFeedFollowParams{UserID: user.ID, FeedUrl: feedUrl},
-	)
+	feed, err := s.queries.GetFeedByUrl(context.Background(), feedUrl)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return ErrFeedNonExist
+		}
+		return err
+	}
+
+	feedName, err := s.queries.RemoveFeedFollow(
+		context.Background(),
+		database.RemoveFeedFollowParams{UserID: user.ID, FeedID: feed.ID},
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return fmt.Errorf("you already unfollowed %q feed", feed.Name)
 		}
 		return err
 	}

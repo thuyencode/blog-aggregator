@@ -37,14 +37,7 @@ WITH deleted_feed_follow AS (
         feed_follows
     WHERE
         feed_follows.user_id = $1
-        AND feed_follows.feed_id = (
-            SELECT
-                feeds.id
-            FROM
-                feeds
-            WHERE
-                feeds.url = sqlc.arg(feed_url)
-        )
+        AND feed_follows.feed_id = $2
     RETURNING
         *
 )
