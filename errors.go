@@ -26,11 +26,7 @@ func (e LackArgsError) Error() string {
 		fmt.Fprintf(&msg, "[%s] ", arg)
 	}
 
-	if len(e.ArgNames) <= 1 {
-		msg.WriteString("as argument")
-	} else {
-		msg.WriteString("as arguments")
-	}
+	msg.WriteString("as argument(s)")
 
 	return msg.String()
 }
