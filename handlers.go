@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strconv"
 	"time"
 
 	"github.com/lib/pq"
@@ -94,10 +95,9 @@ func handleAggregator(s *state, cmd command) error {
 		return fmt.Errorf("invalid duration value: %w", err)
 	}
 
-	log.Printf("collecting feeds every %s\n", duration.String())
-
 	ticker := time.NewTicker(duration)
 	for range ticker.C {
+		log.Printf("collecting feeds every %s\n", duration.String())
 		if err := feed.ScrapeFeeds(s.queries); err != nil {
 			return err
 		}
@@ -232,6 +232,35 @@ func handleUnfollow(s *state, cmd command, user database.User) error {
 	}
 
 	log.Printf("you have unfollowed feed %q successfully\n", feedName)
+
+	return nil
+}
+
+func handleBrowsePosts(s *state, cmd command) error {
+	limit := 2
+
+	if len(cmd.Args) > 0 {
+		_limit, err := strconv.Atoi(cmd.Args[0])
+		if err != nil {
+			return fmt.Errorf("invalid value, must be an integer")
+		}
+		limit = _limit
+	}
+
+	posts, err := s.queries.GetPosts(context.Background(), int32(limit))
+	if err != nil {
+		return err
+	}
+
+	if len(posts) == 0 {
+		log.Println("no saved posts")
+		return nil
+	}
+
+	log.Println("most recent posts:")
+	for _, post := range posts {
+		fmt.Printf("* Title: %q, URL: %s\n", post.Title, post.Url)
+	}
 
 	return nil
 }
