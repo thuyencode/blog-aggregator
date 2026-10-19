@@ -60,7 +60,7 @@ func main() {
 	cmdName := args[1]
 	cmdArgs := args[2:]
 
-	if err = cmds.run(state, command{Name: cmdName, Args: cmdArgs}); err != nil {
+	if err = cmds.run(state, command{cmdName, cmdArgs}); err != nil {
 		log.Fatal(err)
 	}
 }

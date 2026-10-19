@@ -24,7 +24,7 @@ VALUES
         $3
     )
 RETURNING
-    id, created_at, updated_at, name, url, user_id
+    id, created_at, updated_at, name, url, user_id, last_fetched_at
 `
 
 type CreateFeedParams struct {
@@ -43,13 +43,14 @@ func (q *Queries) CreateFeed(ctx context.Context, arg CreateFeedParams) (Feed, e
 		&i.Name,
 		&i.Url,
 		&i.UserID,
+		&i.LastFetchedAt,
 	)
 	return i, err
 }
 
 const getFeedByUrl = `-- name: GetFeedByUrl :one
 SELECT
-    id, created_at, updated_at, name, url, user_id
+    id, created_at, updated_at, name, url, user_id, last_fetched_at
 FROM
     feeds
 WHERE
@@ -66,6 +67,7 @@ func (q *Queries) GetFeedByUrl(ctx context.Context, url string) (Feed, error) {
 		&i.Name,
 		&i.Url,
 		&i.UserID,
+		&i.LastFetchedAt,
 	)
 	return i, err
 }

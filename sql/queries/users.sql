@@ -28,3 +28,22 @@ FROM
 -- name: DeleteAllUsers :exec
 DELETE FROM
     users;
+
+-- name: MarkFeedFetched :exec
+UPDATE
+    feeds
+SET
+    updated_at = pg_catalog.now(),
+    last_fetched_at = pg_catalog.now()
+WHERE
+    id = $1;
+
+-- name: GetNextFeedToFetch :one
+SELECT
+    *
+FROM
+    feeds
+ORDER BY
+    last_fetched_at ASC NULLS FIRST
+LIMIT
+    1;

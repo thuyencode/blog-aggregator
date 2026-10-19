@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/lib/pq"
 	"github.com/lib/pq/pqerror"
@@ -82,14 +83,26 @@ func handleGetUsers(s *state, _ command) error {
 	return nil
 }
 
-func handleAggregator(_ *state, _ command) error {
-	feed, err := feed.FetchFeed(context.Background(), "https://www.wagslane.dev/index.xml")
-	if err != nil {
-		return err
+func handleAggregator(s *state, cmd command) error {
+	if len(cmd.Args) < 1 {
+		return LackArgsError{[]string{"time_between_reqs"}, cmd}
 	}
 
-	log.Printf("rss feed:")
-	fmt.Printf("%+v", *feed)
+	durationStr := cmd.Args[0]
+	duration, err := time.ParseDuration(durationStr)
+	if err != nil {
+		return fmt.Errorf("invalid duration value: %w", err)
+	}
+
+	log.Printf("collecting feeds every %s\n", duration.String())
+
+	ticker := time.NewTicker(duration)
+	for range ticker.C {
+		if err := feed.ScrapeFeeds(s.queries); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
