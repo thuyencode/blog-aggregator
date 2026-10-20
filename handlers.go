@@ -95,15 +95,24 @@ func handleAggregator(s *state, cmd command) error {
 		return fmt.Errorf("invalid duration value: %w", err)
 	}
 
+	errc := make(chan error)
 	ticker := time.NewTicker(duration)
-	for range ticker.C {
-		log.Printf("collecting feeds every %s\n", duration.String())
-		if err := feed.ScrapeFeeds(s.queries); err != nil {
-			return err
+
+	for {
+		select {
+		case <-ticker.C:
+			go func() {
+				log.Printf("collecting feeds every %s\n", duration.String())
+				if err := feed.ScrapeFeeds(s.queries); err != nil {
+					errc <- err
+				}
+			}()
+		case err := <-errc:
+			if err != nil {
+				return err
+			}
 		}
 	}
-
-	return nil
 }
 
 func handleAddFeed(s *state, cmd command, user database.User) error {

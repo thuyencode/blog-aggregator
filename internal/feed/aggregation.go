@@ -23,10 +23,7 @@ func ScrapeFeeds(queries *database.Queries) error {
 		return err
 	}
 
-	go func() {
-		savePosts(queries, feed, nextFeedToFetch.ID)
-	}()
-
+	savePosts(queries, feed, nextFeedToFetch.ID)
 	return nil
 }
 
