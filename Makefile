@@ -1,3 +1,5 @@
+build:
+	go build -o gator
 test:
 	go test -json ./... | gotestfmt
 fmt:
